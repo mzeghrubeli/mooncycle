@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cycle Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #241720;
+    --card: #2e1e29;
+    --cream: #f1e6d6;
+    --cream-dim: #cbb9a8;
+    --menstrual: #7a2f3d;
+    --follicular: #7c8a56;
+    --ovulatory: #c99a3a;
+    --luteal: #8a5a3f;
+    --line: rgba(241,230,214,0.14);
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'Work Sans', sans-serif;
+    display:flex;
+    justify-content:center;
+    padding: 32px 16px 60px;
+  }
+  .card{
+    width:100%;
+    max-width: 440px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size: 1.5rem;
+    letter-spacing: 0.01em;
+    margin: 0 0 4px;
+    color: var(--cream);
+  }
+  .sub{
+    color: var(--cream-dim);
+    font-size: 0.85rem;
+    margin: 0 0 28px;
+    line-height:1.5;
+  }
+  .wheel-wrap{
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto 28px;
+  }
+  svg{ width:100%; height:auto; display:block; }
+  .center-label{
+    position:absolute;
+    top:50%; left:50%;
+    transform: translate(-50%,-50%);
+    text-align:center;
+    pointer-events:none;
+  }
+  .center-day{
+    font-family:'Fraunces', serif;
+    font-size: 2.6rem;
+    font-weight:500;
+    line-height:1;
+  }
+  .center-phase{
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--cream-dim);
+    margin-top: 4px;
+  }
+  .phase-panel{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .phase-panel .name{
+    font-family:'Fraunces', serif;
+    font-size: 1.15rem;
+    margin: 0 0 8px;
+  }
+  .phase-panel p{
+    margin: 0 0 10px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--cream-dim);
+  }
+  .phase-panel p:last-child{ margin-bottom:0; }
+  .phase-panel .flow-tag{
+    display:inline-block;
+    font-size: 0.72rem;
+    color: var(--bg);
+    background: var(--phase-color, var(--ovulatory));
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  details{
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+  }
+  summary{
+    cursor:pointer;
+    font-size: 0.82rem;
+    color: var(--cream-dim);
+    list-style: none;
+  }
+  summary::-webkit-details-marker{ display:none; }
+  summary:before{
+    content: "◦ ";
+  }
+  .settings{
+    display:flex;
+    gap: 12px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .field{
+    flex: 1;
+    min-width: 130px;
+  }
+  label{
+    display:block;
+    font-size: 0.72rem;
+    color: var(--cream-dim);
+    margin-bottom: 5px;
+  }
+  input{
+    width:100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--cream);
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.9rem;
+  }
+  input:focus{ outline: 1px solid var(--cream-dim); }
+  button{
+    margin-top: 14px;
+    background: var(--cream);
+    color: var(--bg);
+    border: none;
+    padding: 9px 16px;
+    border-radius: 4px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover{ opacity:0.9; }
+  .status{
+    font-size: 0.75rem;
+    color: var(--cream-dim);
+    margin-top: 8px;
+    min-height: 1em;
+  }
+  .legend{
+    display:flex;
+    justify-content: space-between;
+    margin-top: 18px;
+    font-size: 0.68rem;
+    color: var(--cream-dim);
+  }
+  .legend span{ display:flex; align-items:center; gap:5px; }
+  .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Cycle Map</h1>
+  <p class="sub">A day-by-day view of where you are, and the shape creative flow tends to take there.</p>
+
+  <div class="wheel-wrap">
+    <svg id="wheel" viewBox="0 0 320 320"></svg>
+    <div class="center-label">
+      <div class="center-day" id="centerDay">—</div>
+      <div class="center-phase" id="centerPhase">set your dates below</div>
+    </div>
+  </div>
+
+  <div class="phase-panel" id="phasePanel">
+    <span class="flow-tag" id="flowTag">—</span>
+    <div class="name" id="phaseName">No data yet</div>
+    <p id="phaseDesc">Enter your last cycle start date to see today's phase and its creative character.</p>
+  </div>
+
+  <details open id="settingsBlock">
+    <summary>Cycle settings</summary>
+    <div class="settings">
+      <div class="field">
+        <label for="startDate">Last cycle start date</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="field">
+        <label for="cycleLen">Cycle length (days)</label>
+        <input type="number" id="cycleLen" min="15" max="45" value="28">
+      </div>
+      <div class="field">
+        <label for="periodLen">Period length (days)</label>
+        <input type="number" id="periodLen" min="1" max="10" value="5">
+      </div>
+    </div>
+    <button id="saveBtn">Save & update map</button>
+    <div class="status" id="status"></div>
+  </details>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--menstrual)"></i>Menstrual</span>
+    <span><i class="dot" style="background:var(--follicular)"></i>Follicular</span>
+    <span><i class="dot" style="background:var(--ovulatory)"></i>Ovulatory</span>
+    <span><i class="dot" style="background:var(--luteal)"></i>Luteal</span>
+  </div>
+</div>
+
+<script>
+const PHASES = {
+  menstrual: {
+    color: 'var(--menstrual)',
+    hex: '#7a2f3d',
+    name: 'Menstrual',
+    tag: 'release',
+    desc: [
+      "Energy turns inward. This is a natural low point for output, and pushing against it usually costs more than it returns.",
+      "Creative flow here is associative and image-based rather than linear — good for journaling, voice notes, collecting fragments, and letting half-formed ideas surface without judging them yet."
+    ]
+  },
+  follicular: {
+    color: 'var(--follicular)',
+    hex: '#7c8a56',
+    name: 'Follicular',
+    tag: 'opening',
+    desc: [
+      "Energy rebuilds and curiosity sharpens. This is usually the easiest window to start something new or pick up a stalled thread.",
+      "Creative flow is expansive and exploratory — brainstorming, research, sketching options, and saying yes to more ideas than you'll keep."
+    ]
+  },
+  ovulatory: {
+    color: 'var(--ovulatory)',
+    hex: '#c99a3a',
+    name: 'Ovulatory',
+    tag: 'peak',
+    desc: [
+      "This is typically the highest point for verbal fluency, confidence, and outward energy in the cycle.",
+      "Creative flow favors expression over incubation — pitching, recording, performing, launching, and any work that benefits from being seen."
+    ]
+  },
+  luteal: {
+    color: 'var(--luteal)',
+    hex: '#8a5a3f',
+    name: 'Luteal',
+    tag: 'refine',
+    desc: [
+      "Focus narrows and patience for detail tends to rise early on, before dropping off as the phase ends.",
+      "Creative flow is best spent editing, structuring, and finishing what's already started — this is a poor window to launch something brand new."
+    ]
+  }
+};
+
+function phaseForDay(day, cycleLen, periodLen){
+  const follicularEnd = Math.round(cycleLen * 0.46);
+  const ovulatoryEnd = follicularEnd + Math.max(2, Math.round(cycleLen * 0.09));
+  if (day <= periodLen) return 'menstrual';
+  if (day <= follicularEnd) return 'follicular';
+  if (day <= ovulatoryEnd) return 'ovulatory';
+  return 'luteal';
+}
+
+function segmentsFor(cycleLen, periodLen){
+  const follicularEnd = Math.round(cycleLen * 0.46);
+  const ovulatoryEnd = follicularEnd + Math.max(2, Math.round(cycleLen * 0.09));
+  return [
+    { key:'menstrual', start:0, end:periodLen },
+    { key:'follicular', start:periodLen, end:follicularEnd },
+    { key:'ovulatory', start:follicularEnd, end:ovulatoryEnd },
+    { key:'luteal', start:ovulatoryEnd, end:cycleLen }
+  ];
+}
+
+function polar(cx, cy, r, angleDeg){
+  const a = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+
+function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle){
+  const p1 = polar(cx, cy, rOuter, startAngle);
+  const p2 = polar(cx, cy, rOuter, endAngle);
+  const p3 = polar(cx, cy, rInner, endAngle);
+  const p4 = polar(cx, cy, rInner, startAngle);
+  const largeArc = (endAngle - startAngle) % 360 > 180 ? 1 : 0;
+  return `M ${p1.x} ${p1.y} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${p2.x} ${p2.y} L ${p3.x} ${p3.y} A ${rInner} ${rInner} 0 ${largeArc} 0 ${p4.x} ${p4.y} Z`;
+}
+
+function drawWheel(cycleLen, periodLen, todayDay){
+  const svg = document.getElementById('wheel');
+  svg.innerHTML = '';
+  const cx = 160, cy = 160, rOuter = 148, rInner = 100;
+  const segs = segmentsFor(cycleLen, periodLen);
+  const ns = 'http://www.w3.org/2000/svg';
+
+  segs.forEach(seg => {
+    const startAngle = (seg.start / cycleLen) * 360;
+    const endAngle = (seg.end / cycleLen) * 360;
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', arcPath(cx, cy, rOuter, rInner, startAngle, endAngle));
+    path.setAttribute('fill', PHASES[seg.key].hex);
+    path.setAttribute('opacity', seg.key === phaseForDay(todayDay, cycleLen, periodLen) ? '1' : '0.55');
+    svg.appendChild(path);
+  });
+
+  // day tick marks
+  for(let d = 0; d < cycleLen; d++){
+    const angle = (d / cycleLen) * 360;
+    const p1 = polar(cx, cy, rOuter, angle);
+    const p2 = polar(cx, cy, rOuter - 6, angle);
+    const tick = document.createElementNS(ns, 'line');
+    tick.setAttribute('x1', p1.x); tick.setAttribute('y1', p1.y);
+    tick.setAttribute('x2', p2.x); tick.setAttribute('y2', p2.y);
+    tick.setAttribute('stroke', '#241720');
+    tick.setAttribute('stroke-width', d % 7 === 0 ? '1.5' : '0.6');
+    tick.setAttribute('opacity', '0.5');
+    svg.appendChild(tick);
+  }
+
+  // today marker
+  if (todayDay !== null){
+    const angle = ((todayDay - 1) / cycleLen) * 360;
+    const pos = polar(cx, cy, (rOuter + rInner) / 2, angle);
+    const marker = document.createElementNS(ns, 'circle');
+    marker.setAttribute('cx', pos.x);
+    marker.setAttribute('cy', pos.y);
+    marker.setAttribute('r', 8);
+    marker.setAttribute('fill', '#f1e6d6');
+    marker.setAttribute('stroke', '#241720');
+    marker.setAttribute('stroke-width', 2);
+    svg.appendChild(marker);
+  }
+}
+
+function daysBetween(dateStr){
+  const start = new Date(dateStr + 'T00:00:00');
+  const now = new Date();
+  const nowMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.floor((nowMid - start) / (1000*60*60*24));
+  return diff;
+}
+
+function render(startDate, cycleLen, periodLen){
+  if (!startDate){
+    document.getElementById('centerDay').textContent = '—';
+    document.getElementById('centerPhase').textContent = 'set your dates below';
+    drawWheel(cycleLen, periodLen, null);
+    return;
+  }
+  const diff = daysBetween(startDate);
+  const dayInCycle = ((diff % cycleLen) + cycleLen) % cycleLen + 1;
+  const key = phaseForDay(dayInCycle, cycleLen, periodLen);
+  const phase = PHASES[key];
+
+  document.getElementById('centerDay').textContent = 'Day ' + dayInCycle;
+  document.getElementById('centerPhase').textContent = phase.name;
+
+  document.getElementById('flowTag').textContent = phase.tag;
+  document.getElementById('flowTag').style.setProperty('--phase-color', phase.color);
+  document.getElementById('phaseName').textContent = phase.name + ' phase';
+  document.getElementById('phaseDesc').innerHTML = phase.desc.map(p => `<p>${p}</p>`).join('');
+
+  drawWheel(cycleLen, periodLen, dayInCycle);
+}
+
+async function loadSaved(){
+  try{
+    const result = await window.storage.get('cycle-settings', false);
+    if (result && result.value){
+      const data = JSON.parse(result.value);
+      return data;
+    }
+  }catch(e){ /* no saved data yet */ }
+  return null;
+}
+
+async function init(){
+  const saved = await loadSaved();
+  if (saved){
+    document.getElementById('startDate').value = saved.startDate || '';
+    document.getElementById('cycleLen').value = saved.cycleLen || 28;
+    document.getElementById('periodLen').value = saved.periodLen || 5;
+    document.getElementById('settingsBlock').removeAttribute('open');
+  }
+  const s = document.getElementById('startDate').value;
+  const c = parseInt(document.getElementById('cycleLen').value, 10);
+  const p = parseInt(document.getElementById('periodLen').value, 10);
+  render(s, c, p);
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    const startDate = document.getElementById('startDate').value;
+    const cycleLen = parseInt(document.getElementById('cycleLen').value, 10) || 28;
+    const periodLen = parseInt(document.getElementById('periodLen').value, 10) || 5;
+    const statusEl = document.getElementById('status');
+
+    if (!startDate){
+      statusEl.textContent = 'Add a start date first.';
+      return;
+    }
+
+    render(startDate, cycleLen, periodLen);
+    try{
+      await window.storage.set('cycle-settings', JSON.stringify({ startDate, cycleLen, periodLen }), false);
+      statusEl.textContent = 'Saved. This stays private to you.';
+      document.getElementById('settingsBlock').removeAttribute('open');
+    }catch(e){
+      statusEl.textContent = 'Updated, but could not save for next time.';
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
